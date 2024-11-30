@@ -37,6 +37,8 @@ func Router(c *gin.Engine) {
 		c.GET("/diff", func(context *gin.Context) {
 			context.HTML(http.StatusOK, "Differentroom.html", gin.H{"wsport": wsport})
 
+		}).Use(func(context *gin.Context) {
+
 		})
 
 		c.GET("/some", func(context *gin.Context) {
