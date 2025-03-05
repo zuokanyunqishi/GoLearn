@@ -135,7 +135,7 @@ func NewServer() interfaces.Server {
 		Name:        "chantServer",
 		IPVersion:   "tcp4",
 		Port:        8805,
-		Host:        "127.0.0.1",
+		Host:        "0.0.0.0",
 		MsgHandler:  NewMessageHandler(),
 		connManager: NewConnectionManager(),
 	}
