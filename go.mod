@@ -12,7 +12,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-basic/uuid v1.0.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-resty/resty/v2 v2.7.0
 	github.com/go-vgo/robotgo v0.100.10
 	github.com/golang-module/carbon/v2 v2.1.9
 	github.com/golang/protobuf v1.5.2

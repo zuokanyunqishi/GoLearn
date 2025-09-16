@@ -41,6 +41,9 @@
 	* [redisBigKey](redisApplication/big_key_test.go)
 	* [canal监听Mysql,redis缓存数据同步](redisApplication/big_key_test.go)
 30. [面向切面(middleware)](pipeline/pipline.go)
+31. [kafka应用](kafka)
+     * [消费者](kafka/customer/main.go)
+     * [生产者](kafka/producer/main.go)
 
 ##### 项目实战
 
