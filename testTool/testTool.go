@@ -2,14 +2,15 @@ package testTool
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/smartystreets/assertions/should"
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/ysmood/got/lib/gop"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/smartystreets/assertions/should"
+	. "github.com/smartystreets/goconvey/convey"
+	"github.com/ysmood/got/lib/gop"
 )
 
 const (
