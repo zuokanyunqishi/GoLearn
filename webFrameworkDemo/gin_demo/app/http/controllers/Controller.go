@@ -11,7 +11,7 @@ type Controller struct {
 
 // 统一响应格式封装
 func (*Controller) ResponseError(ctx *gin.Context, status int, message interface{}) {
-	ctx.JSON(status, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code":    status,
 		"message": message,
 		"data":    gin.H{},

@@ -68,6 +68,6 @@ func (c *RegisterController) handleAuthError(ctx *gin.Context, err error, userna
 		c.ResponseError(ctx, http.StatusBadRequest, err.Error())
 	default:
 		app.Log.Error("Login failed", zap.String("username", username), zap.Error(err))
-		c.ResponseError(ctx, http.StatusInternalServerError, "系统错误")
+		c.ResponseError(ctx, http.StatusBadRequest, "系统错误")
 	}
 }

@@ -15,7 +15,7 @@ var OnlineMap = make(map[string]*websocket.Conn)
 
 func Router(c *gin.Engine) {
 
-	c.Use(middleware.Trace)
+	c.Use(middleware.CorsMiddleware(), middleware.Trace)
 	c.GET("/", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "hello word!")
 	})
