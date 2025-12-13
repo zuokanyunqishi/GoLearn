@@ -1,10 +1,9 @@
 package controllers
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"speed/app/http/model"
 	"speed/app/lib/log"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HelloController struct {
@@ -15,7 +14,7 @@ var HelloC = &HelloController{}
 
 func (h *HelloController) Index(ctx *gin.Context) {
 
-	fmt.Println(model.Users{}.GetMore())
+	// fmt.Println(model.Users{}.GetMore())
 	log.WithCtx(ctx).Info("hello word")
-	h.success(ctx, map[string]interface{}{"hello": "hello word"})
+	h.ResponseSuccess(ctx, map[string]interface{}{"hello": "hello word"})
 }

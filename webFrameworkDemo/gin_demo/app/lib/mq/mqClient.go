@@ -1,4 +1,4 @@
-package main
+package mq
 
 import "github.com/streadway/amqp"
 

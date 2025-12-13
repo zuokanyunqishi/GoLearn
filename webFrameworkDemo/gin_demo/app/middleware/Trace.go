@@ -1,12 +1,13 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/syyongx/php2go"
 	"speed/app/lib"
 	"speed/app/lib/log"
 	app "speed/bootstrap"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/syyongx/php2go"
 )
 
 func Trace(ctx *gin.Context) {
@@ -25,7 +26,7 @@ func Trace(ctx *gin.Context) {
 	if app.Config.GetString("appEnv") == "prod" {
 		sqlLog := new(log.SqlLog)
 		sqlLog.SetCtx(ctx)
-		app.Db.SetLogger(sqlLog)
+		//app.Db.SetLogger(sqlLog)
 	}
 
 	ctx.Next()

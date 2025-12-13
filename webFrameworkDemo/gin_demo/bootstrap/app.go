@@ -1,17 +1,22 @@
 package app
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"speed/app/lib/log"
+	"speed/app/lib/validate"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v7"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
 	"github.com/spf13/viper"
 	"github.com/syyongx/php2go"
 	"go.uber.org/zap"
@@ -40,10 +45,15 @@ func init() {
 	initAppEnv()
 	initLog()
 
-	initDb()
-	initRedis()
+	//initMysqlDb()/
+	//initRedis()//
+	initValidator()
 }
 
+func initValidator() {
+	validate.Init()
+
+}
 func initAppEnv() {
 	AppEnv = Config.GetString("appEnv")
 }
@@ -97,7 +107,7 @@ func initRedis() {
 
 }
 
-func initDb() {
+func initMysqlDb() {
 
 	key := "db.mysql.default."
 	var (
@@ -108,10 +118,11 @@ func initDb() {
 		port     = Config.GetString(key + "port")
 		database = Config.GetString(key + "databaseName")
 		charset  = Config.GetString(key + "charset")
-		dialect  = Config.GetString("db.dialect")
+		//dialect  = Config.GetString("db.dialect")
 	)
 	dsn := username + ":" + pass + "@tcp(" + host + ":" + port + ")/" + database + "?charset=" + charset
-	db, err := gorm.Open(dialect, dsn)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
 	if err != nil || reflect.TypeOf(db).String() != "*gorm.DB" || db == nil {
 		if err == nil || db == nil {
 			log.Panicf("init DB connect failed db init false ")
@@ -119,20 +130,32 @@ func initDb() {
 		}
 		log.Panicf("init DB connect failed, error: %s", err.Error())
 	}
-	err = db.DB().Ping()
 	if err != nil {
 		log.Panicf("init DB connect failed, error: %s", err.Error())
 	}
-	db.LogMode(true)
 
-	if Config.GetString("appEnv") == "prod" {
-		db.SetLogger(&log.SqlLog{})
-	}
+	//if Config.GetString("appEnv") == "prod" {
+	//	db.Config.Logger = Log
+	//}
 
-	db.DB().SetMaxOpenConns(50)
 	Db = db
 	log.Info("init DB connect success")
 
+}
+
+func InitSqliteDb(sqliteFile embed.FS) {
+	// 1. 确定一个可写的目标路径（例如用户的应用数据目录）
+	homeDir, _ := os.UserHomeDir()
+	dbDir := filepath.Join(homeDir, "Library", "Application Support", "wawa_shop", "data")
+	os.MkdirAll(dbDir, 0755)
+	targetPath := filepath.Join(dbDir, "shop.sqlite3")
+	// 2. 从嵌入资源中读取数据
+	data, _ := sqliteFile.ReadFile("data/shop.sqlite3")
+	// 3. 将数据写入目标文件
+	os.WriteFile(targetPath, data, 0644)
+	// 4. 使用这个文件路径连接数据库
+	db, _ := gorm.Open(sqlite.Open(targetPath), &gorm.Config{})
+	Db = db
 }
 
 func initLog() {

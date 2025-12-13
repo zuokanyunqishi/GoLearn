@@ -1,33 +1,33 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Controller struct {
 }
 
-func (bs *Controller) success(c *gin.Context, data map[string]interface{}) {
-	c.JSON(http.StatusOK, gin.H{
-		"code": "10000",
-		"msg":  "ok",
-		"data": data,
+// 统一响应格式封装
+func (*Controller) ResponseError(ctx *gin.Context, status int, message interface{}) {
+	ctx.JSON(status, gin.H{
+		"code":    status,
+		"message": message,
+		"data":    nil,
 	})
 }
 
-func (bs *Controller) fail(c *gin.Context, errCode int, msg string) {
-
-	c.AbortWithStatusJSON(http.StatusOK, gin.H{
-		`code`: errCode,
-		`msg`:  msg,
-		`data`: gin.H{},
+func (*Controller) ResponseSuccess(ctx *gin.Context, data interface{}) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "success",
+		"data":    data,
 	})
 }
 
-// f 格式化的字符串
+// TextRes f 格式化的字符串
 // s 输出的字符串
-func (bs *Controller) TextRes(c *gin.Context, f string, s ...string) {
+func (*Controller) TextRes(c *gin.Context, f string, s ...string) {
 	c.String(http.StatusOK, f, s)
-
 }
