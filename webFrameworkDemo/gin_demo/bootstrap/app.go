@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"os"
@@ -13,15 +14,16 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	_ "github.com/go-sql-driver/mysql"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
 	"github.com/spf13/viper"
 	"github.com/syyongx/php2go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
+	"moul.io/zapgorm2"
 )
 
 var (
@@ -34,20 +36,29 @@ var (
 	AppName string
 	AppPath string
 	AppEnv  string
+	AppKey  string
 )
 
-func init() {
+func InitApp(sqliteDbFile, config embed.FS) {
 
-	initConfig()
+	initReadFsConfig(config)
+	//initConfig()
 	initAppName()
 
 	initAppPath()
 	initAppEnv()
+	initAppKey()
 	initLog()
 
 	//initMysqlDb()/
 	//initRedis()//
 	initValidator()
+	initSqliteDb(sqliteDbFile)
+
+}
+
+func initAppKey() {
+	AppKey = viper.GetString("appKey")
 }
 
 func initValidator() {
@@ -68,6 +79,21 @@ func initConfig() {
 	err := Config.ReadInConfig()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func initReadFsConfig(configFS embed.FS) {
+
+	Config = viper.New()
+	Config.SetConfigType("json")
+	f, err := configFS.Open(".config.json")
+	if err != nil {
+		panic(fmt.Errorf("failed to open embedded config: %w", err))
+	}
+	defer f.Close()
+
+	if err := Config.ReadConfig(f); err != nil {
+		panic(fmt.Errorf("failed to read config: %w", err))
 	}
 }
 
@@ -143,7 +169,7 @@ func initMysqlDb() {
 
 }
 
-func InitSqliteDb(sqliteFile embed.FS) {
+func initSqliteDb(sqliteFile embed.FS) {
 	// 1. 确定一个可写的目标路径（例如用户的应用数据目录）
 	homeDir, _ := os.UserHomeDir()
 	dbDir := filepath.Join(homeDir, "Library", "Application Support", "wawa_shop", "data")
@@ -154,7 +180,15 @@ func InitSqliteDb(sqliteFile embed.FS) {
 	// 3. 将数据写入目标文件
 	os.WriteFile(targetPath, data, 0644)
 	// 4. 使用这个文件路径连接数据库
-	db, _ := gorm.Open(sqlite.Open(targetPath), &gorm.Config{})
+
+	Logger := zapgorm2.New(Log0)
+	Logger.Context = func(ctx context.Context) []zapcore.Field {
+		traceId := ctx.Value("traceId")
+		return []zapcore.Field{{Key: "traceId", Type: zapcore.StringType, String: traceId.(string)}}
+	}
+
+	//targetPath = "data/shop.sqlite3"
+	db, _ := gorm.Open(sqlite.Open(targetPath), &gorm.Config{Logger: Logger.LogMode(gormlogger.Info)})
 	Db = db
 }
 
@@ -166,14 +200,15 @@ func initLog() {
 func InitLog() *zap.Logger {
 
 	fileName := ""
+	var level zapcore.Level
 	if Config.Get("appEnv") == "prod" {
 		fileName = AppPath + "/storage/logs/zap.log"
-
+		level = getLoggerLevel("info")
 	} else {
 		fileName = "storage/logs/zap.log"
+		level = getLoggerLevel("debug")
 	}
 
-	level := getLoggerLevel("info")
 	var write zapcore.WriteSyncer
 
 	if AppEnv == "prod" {
@@ -194,7 +229,7 @@ func InitLog() *zap.Logger {
 
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoder), write, zap.NewAtomicLevelAt(level))
 
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(log.Stack{}))
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(log.Stack{}), zap.Development())
 	log.Log = logger.Sugar()
 	return logger
 	//Log1 = logger //嵌套结构化

@@ -1,6 +1,14 @@
 package service
 
-import "github.com/syyongx/php2go"
+import (
+	"context"
+	"speed/app/exceptions"
+	"speed/app/http/model"
+	"speed/app/lib/hash"
+	"speed/app/lib/jwt"
+
+	"github.com/gin-gonic/gin"
+)
 
 type UserService struct {
 }
@@ -9,28 +17,29 @@ func NewUserService() *UserService {
 	return &UserService{}
 }
 
-// Service层实现
-func (s *UserService) Authenticate(username, password string) (string, error) {
-	// 1. 获取用户信息
-	//user, err := s.userRepo.FindByUsername(username)
-	//if err != nil {
-	//	if errors.Is(err, sql.ErrNoRows) {
-	//		return "", ErrUserNotFound
-	//	}
-	//	return "", err
-	//}
-	//
-	//// 2. 验证密码
-	//if !checkPassword(password, user.PasswordHash) {
-	//	return "", ErrWrongPassword
-	//}
-	//
-	//// 3. 生成JWT
-	//token, err := jwt.GenerateToken(user.ID, user.Username)
-	//if err != nil {
-	//	return "", fmt.Errorf("token generation failed: %w", err)
-	//}
-	token := php2go.Md5(username + password)
+// Authenticate Service层实现
+func (s *UserService) Authenticate(ctx context.Context, username, password string) (string, error) {
 
-	return token, nil
+	var u model.User
+	err := u.GetUserByUserName(ctx, username)
+	if err != nil {
+		return "", exceptions.ErrUserNotFound
+	}
+
+	if !hash.CheckPassword(u.Password, password) {
+		return "", exceptions.ErrWrongPassword
+	}
+	generateToken, err := jwt.GenerateToken(u.ID, u.UserName)
+
+	return generateToken, err
+}
+
+func (s *UserService) AddUser(ctx *gin.Context, user *model.User) error {
+	db_u := model.User{}
+	err := db_u.GetUserByUserName(ctx, user.UserName)
+	if err == nil && db_u.UserName == user.UserName {
+		return exceptions.UserNameIsUsed
+	}
+
+	return user.Add(ctx)
 }

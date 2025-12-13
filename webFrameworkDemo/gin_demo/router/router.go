@@ -26,7 +26,10 @@ func Router(c *gin.Engine) {
 	apiGroup := c.Group("api/", func(ctx *gin.Context) {
 		ctx.Next()
 	})
-	apiGroup.POST("login", controllers.LoginC.Login)
+	{
+		apiGroup.POST("login", controllers.LoginC.Login)
+		apiGroup.POST("register", controllers.Register.Register)
+	}
 
 	//{
 	//	c.GET("/first", func(context *gin.Context) {

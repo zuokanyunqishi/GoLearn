@@ -3,7 +3,6 @@ package middleware
 import (
 	"speed/app/lib"
 	"speed/app/lib/log"
-	app "speed/bootstrap"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -21,13 +20,6 @@ func Trace(ctx *gin.Context) {
 	ctx.Set("uri", uri)
 	ctx.Set("startTime", lib.MsTime())
 	log.WithCtx(ctx).Info("service start")
-
-	//todo 未经测试
-	if app.Config.GetString("appEnv") == "prod" {
-		sqlLog := new(log.SqlLog)
-		sqlLog.SetCtx(ctx)
-		//app.Db.SetLogger(sqlLog)
-	}
 
 	ctx.Next()
 	log.WithCtx(ctx).Infof("service end --- 耗时 %v ms", lib.MsTime()-ctx.Value("startTime").(int64))

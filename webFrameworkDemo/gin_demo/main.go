@@ -10,11 +10,14 @@ import (
 )
 
 //go:embed data/shop.sqlite3
-var SqliteDbFile embed.FS
+var sqliteDbFile embed.FS
 
 //go:embed .config.json
-var config embed.FS
+var configFile embed.FS
 
+func init() {
+	app.InitApp(sqliteDbFile, configFile)
+}
 func main() {
 
 	var ginMode string
@@ -25,7 +28,7 @@ func main() {
 	} else {
 		ginMode = gin.DebugMode
 	}
-	app.InitSqliteDb(SqliteDbFile)
+
 	gin.SetMode(ginMode)
 	engine := gin.Default()
 	//engine.LoadHTMLGlob("resources/views/*")

@@ -1,27 +1,29 @@
 package model
 
-import app "speed/bootstrap"
+import (
+	"context"
+	app "speed/bootstrap"
+)
 
-type Users struct {
-	ID          int    `gorm:"primary_key;column:Id;type:int(10) unsigned;not null"` //	主键
-	Openid      string `gorm:"unique;column:Openid;type:varchar(55);not null"`       //	微信openid
-	NickName    string `gorm:"column:NickName;type:varchar(64);not null"`            //	昵称
-	HeadImgURL  string `gorm:"column:HeadImgUrl;type:varchar(300);not null"`         //	头像地址
-	IsSubscribe int    `gorm:"column:IsSubscribe;type:tinyint(4);not null"`          //	是否关注0:未,1:关注
-	Sex         int    `gorm:"column:Sex;type:tinyint(4);not null"`                  //	性别,0:女,1:男
-	City        string `gorm:"column:City;type:varchar(55);not null"`                //	城市
-	Country     string `gorm:"column:Country;type:varchar(64);not null"`             //	国家
-	Province    string `gorm:"column:Province;type:varchar(30);not null"`            //	省份
-	Email       string `gorm:"column:Email;type:varchar(64);not null"`               //	电子邮箱
+type User struct {
+	ID            int    `gorm:"primaryKey;autoIncrement;column:id"`        // 主键自增[1](@ref)[6](@ref)
+	UserName      string `gorm:"type:text(30);not null;column:user_name"`   // 用户名，非空[2](@ref)[6](@ref)
+	Phone         string `gorm:"type:text(11);not null;column:phone"`       // 手机号，非空[2](@ref)[7](@ref)
+	Password      string `gorm:"type:text(255);not null;column:password"`   // 密码，非空[2](@ref)[7](@ref)
+	Token         string `gorm:"type:text(500);default:'';column:token"`    // Token，默认空字符串[6](@ref)[7](@ref)
+	LastLoginTime int64  `gorm:"not null;default:0;column:last_login_time"` // 最后登录时间，默认0[6](@ref)[7](@ref)
 }
 
-func (U Users) TableName() string {
-	return "user"
+func (u *User) TableName() string {
+	return "users"
 }
 
-func (Users) GetMore() []Users {
-	var user []Users
-	app.Db.Where("Id >= ?", 1).Find(&user)
+func (u *User) GetUserByUserName(ctx context.Context, username string) error {
+	tx := app.Db.WithContext(ctx).Where("user_name = ?", username).Find(&u)
+	return tx.Error
+}
 
-	return user
+func (u *User) Add(ctx context.Context) error {
+	tx := app.Db.WithContext(ctx).Save(&u)
+	return tx.Error
 }

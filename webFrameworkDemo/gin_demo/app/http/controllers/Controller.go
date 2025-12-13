@@ -14,7 +14,7 @@ func (*Controller) ResponseError(ctx *gin.Context, status int, message interface
 	ctx.JSON(status, gin.H{
 		"code":    status,
 		"message": message,
-		"data":    nil,
+		"data":    gin.H{},
 	})
 }
 
