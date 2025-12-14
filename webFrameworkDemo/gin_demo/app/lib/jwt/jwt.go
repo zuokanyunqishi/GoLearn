@@ -37,7 +37,7 @@ func ValidateToken(tokenString string) (*CustomClaims, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
-			return []byte("your-secret-key"), nil
+			return []byte(app.AppKey), nil
 		},
 	)
 	if err != nil {

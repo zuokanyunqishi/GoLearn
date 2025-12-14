@@ -43,3 +43,12 @@ func (s *UserService) AddUser(ctx *gin.Context, user *model.User) error {
 
 	return user.Add(ctx)
 }
+
+func (s *UserService) Me(ctx *gin.Context, userId int) (model.User, error) {
+	var u model.User
+	err := u.GetUserById(ctx, userId)
+	if err != nil {
+		return u, err
+	}
+	return u, nil
+}

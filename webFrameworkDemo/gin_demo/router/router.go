@@ -31,6 +31,12 @@ func Router(c *gin.Engine) {
 		apiGroup.POST("register", controllers.Register.Register)
 	}
 
+	apiAuth := apiGroup.Use(middleware.JWTAuthMiddleware())
+	{
+		apiAuth.GET("me", controllers.UserC.Me)
+		apiAuth.POST("me/edit", controllers.UserC.Edit)
+	}
+
 	//{
 	//	c.GET("/first", func(context *gin.Context) {
 	//		context.HTML(http.StatusOK, "Firstroom.html", gin.H{"wsport": wsport})
