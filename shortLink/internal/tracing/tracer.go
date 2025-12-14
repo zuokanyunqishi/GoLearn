@@ -8,4 +8,6 @@ func InitTracerProvider(name string, version string, enabled bool, ratio any) (*
 
 	if enabled == true {
 	}
+
+	return nil, nil
 }
