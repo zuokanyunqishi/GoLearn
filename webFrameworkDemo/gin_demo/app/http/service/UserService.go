@@ -52,3 +52,32 @@ func (s *UserService) Me(ctx *gin.Context, userId int) (model.User, error) {
 	}
 	return u, nil
 }
+
+func (s *UserService) UpdateUser(ctx *gin.Context, userId int, user *model.User) error {
+	var u model.User
+	err := u.GetUserById(ctx, userId)
+	if err != nil {
+		return exceptions.ErrUserNotFound
+	}
+
+	// 只更新非零值的字段
+	if user.Nickname != "" {
+		u.Nickname = user.Nickname
+	}
+	if user.Sex != 0 {
+		u.Sex = user.Sex
+	}
+	if user.Age != 0 {
+		u.Age = user.Age
+	}
+	if user.Avatar != "" {
+		u.Avatar = user.Avatar
+	}
+	if user.Email != "" {
+		u.Email = user.Email
+	}
+
+	// 确保使用正确的用户ID进行更新
+	u.ID = userId
+	return u.Update(ctx)
+}
