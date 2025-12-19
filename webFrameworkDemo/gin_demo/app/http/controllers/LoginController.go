@@ -31,8 +31,6 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required,min=6" comment:"密码"`
 }
 
-var tags = make(map[string]string)
-
 func (c *LoginController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
