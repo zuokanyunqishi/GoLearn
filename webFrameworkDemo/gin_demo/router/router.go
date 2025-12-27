@@ -29,6 +29,10 @@ func Router(c *gin.Engine) {
 	{
 		apiGroup.POST("login", controllers.LoginC.Login)
 		apiGroup.POST("register", controllers.Register.Register)
+
+		// 商品相关接口（公开接口）
+		apiGroup.GET("products", controllers.ProductC.List)       // 商品列表
+		apiGroup.GET("products/:id", controllers.ProductC.Detail) // 商品详情
 	}
 
 	apiAuth := apiGroup.Use(middleware.JWTAuthMiddleware())
