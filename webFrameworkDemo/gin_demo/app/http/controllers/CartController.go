@@ -51,7 +51,7 @@ func (c *CartController) Add(ctx *gin.Context) {
 		return
 	}
 
-	c.ResponseSuccess(ctx, gin.H{"message": "添加成功"})
+	c.ResponseSuccess(ctx, gin.H{})
 }
 
 // Update 更新购物车
