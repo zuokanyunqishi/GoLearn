@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./;pb";
+
+message Person {
+  PersonBase base = 1;
+  // 数组
+  repeated PersonBase friends = 2;
+  PersonBase father = 3;
+  message School {
+    string name = 1;
+    string address = 2;
+  }
+
+  School school = 4;
+  bytes company = 5;
+  bool is_married = 6;
+  map<string, Skill> skill = 7;
+}
+
+enum Sex {
+  man = 0;
+  women = 1;
+}
+
+message Address {
+  string province = 1;
+  string city = 2;
+  string region = 3;
+}
+
+message PersonBase {
+  string name = 1 ;
+  uint32 age = 2;
+  uint32 height = 3;
+  Sex sex = 4;
+  Address address = 5;
+  string email = 6;
+}
+
+// 技能
+message Skill {
+  // 描述
+  string desc = 1;
+  // 等级
+  enum Grade {
+    normal = 0;
+    low = 1;
+    middle = 2;
+    high = 3;
+    senior = 4;
+  }
+  Grade grade = 2;
+}
+
+service Life {
+  rpc work(WorkRequest) returns (WorkResponse);
+  rpc study(StudyRequest) returns (StudyResponse);
+}
+
+message WorkRequest {repeated bytes tools = 1;}
+
+message WorkResponse {float money = 1;}
+
+message StudyRequest {
+  bytes subject = 1;
+  uint32 times = 2;
+}
+
+message StudyResponse {
+  float money = 1;
+  bytes doSomething = 2;
+}

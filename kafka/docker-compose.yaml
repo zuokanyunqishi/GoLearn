@@ -1,0 +1,38 @@
+services:
+  kafka:
+    image: bitnami/kafka:3.6.2
+    container_name: kafka-dev
+    ports:
+      - "9092:9092"    # 宿主机访问端口
+      - "9093:9093"    # 控制器通信端口（KRaft 必需）
+    environment:
+      # KRaft 配置
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-dev:9093  # 单节点用容器名
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_KRAFT_CLUSTER_ID=5QL1qScTR9yqNl3pWFnzNg
+
+      # 网络广告设置（关键修复！）
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://192.168.0.185:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+
+      # 资源优化
+      - KAFKA_HEAP_OPTS=-Xmx256m -Xms256m
+      - KAFKA_LOG_RETENTION_HOURS=24
+      - KAFKA_NUM_PARTITIONS=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - kafka-net
+
+volumes:
+  kafka_data:
+networks:
+  kafka-net:
+    driver: bridge
+

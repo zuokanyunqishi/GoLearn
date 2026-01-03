@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: 购物车API接口文档
+  description: 购物车功能提供了一套完整的API接口，支持用户添加、更新、删除、查询购物车商品等操作
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8086/
+    description: 本地开发环境
+  - url: https://api.example.com/api
+    description: 生产环境
+
+tags:
+  - name: 购物车
+    description: 购物车相关接口
+
+security:
+  - BearerAuth: [ ]
+
+paths:
+  /api/cart:
+    post:
+      tags:
+        - 购物车
+      summary: 添加商品到购物车
+      description: 将商品添加到购物车，如果已存在相同商品和SKU，则增加数量
+      operationId: addCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartRequest'
+            examples:
+              example1:
+                summary: 添加普通商品
+                value:
+                  product_id: 1
+                  quantity: 2
+              example2:
+                summary: 添加带SKU的商品
+                value:
+                  product_id: 1
+                  sku_id: 2
+                  quantity: 1
+      responses:
+        '200':
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              example:
+                code: 200
+                message: success
+                data:
+                  message: 添加成功
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - 购物车
+      summary: 获取购物车列表
+      description: 获取当前用户的购物车列表，包含商品和SKU信息
+      operationId: getCartList
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CartResponse'
+              examples:
+                example1:
+                  summary: 购物车列表
+                  value:
+                    code: 200
+                    message: success
+                    data:
+                      - id: 1
+                        user_id: 1
+                        product_id: 1
+                        sku_id: 2
+                        quantity: 2
+                        is_selected: 1
+                        created_at: "2024-01-01 12:00:00"
+                        updated_at: "2024-01-01 12:00:00"
+                        product:
+                          id: 1
+                          spu_code: "SPU001"
+                          name: "商品名称"
+                          sale_price: 99.00
+                        sku:
+                          id: 2
+                          sku_code: "SKU001"
+                          sku_name: "红色-M码"
+                          sale_price: 99.00
+
+  /api/cart/count:
+    get:
+      tags:
+        - 购物车
+      summary: 获取购物车商品数量
+      description: 获取当前用户购物车中的商品数量
+      operationId: getCartCount
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 5
+              example:
+                code: 200
+                message: success
+                data:
+                  count: 5
+
+  /api/cart/update/{id}:
+    post:
+      tags:
+        - 购物车
+      summary: 更新购物车
+      description: 更新购物车商品数量或选中状态
+      operationId: updateCart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 购物车记录ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartRequest'
+            examples:
+              example1:
+                summary: 更新数量
+                value:
+                  quantity: 3
+              example2:
+                summary: 更新选中状态
+                value:
+                  is_selected: 0
+              example3:
+                summary: 同时更新数量和选中状态
+                value:
+                  quantity: 5
+                  is_selected: 1
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: 请求参数错误或库存不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cart/del/{id}:
+    post:
+      tags:
+        - 购物车
+      summary: 删除购物车记录
+      description: 删除指定的购物车记录
+      operationId: deleteCart
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 购物车记录ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: 购物车记录不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cart/batch-selected:
+    post:
+      tags:
+        - 购物车
+      summary: 批量更新选中状态
+      description: 批量更新多个购物车记录的选中状态
+      operationId: batchUpdateSelected
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cart_ids
+                - is_selected
+              properties:
+                cart_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 购物车ID列表
+                  example: [ 1, 2, 3 ]
+                is_selected:
+                  type: integer
+                  enum: [ 0, 1 ]
+                  description: 是否选中（1-选中，0-未选中）
+                  example: 1
+            example:
+              cart_ids: [ 1, 2, 3 ]
+              is_selected: 1
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/cart/clear:
+    post:
+      tags:
+        - 购物车
+      summary: 清空购物车
+      description: 清空购物车，可选择只删除未选中的商品或删除所有商品
+      operationId: clearCart
+      parameters:
+        - name: only_unselected
+          in: query
+          description: 是否只删除未选中的商品，默认false（删除所有）
+          schema:
+            type: boolean
+            default: false
+          example: false
+      responses:
+        '200':
+          description: 清空成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Token认证，格式：Bearer {token}
+
+  schemas:
+    AddCartRequest:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: integer
+          description: 商品ID
+          minimum: 1
+          example: 1
+        sku_id:
+          type: integer
+          description: SKU ID（可选，如果商品没有SKU则不传或传null）
+          minimum: 1
+          example: 2
+        quantity:
+          type: integer
+          description: 商品数量
+          minimum: 1
+          maximum: 999
+          example: 1
+
+    UpdateCartRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          description: 商品数量（可选）
+          minimum: 1
+          maximum: 999
+          example: 3
+        is_selected:
+          type: integer
+          description: 是否选中（可选，1-选中，0-未选中）
+          enum: [ 0, 1 ]
+          example: 1
+
+    CartResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 购物车记录ID
+          example: 1
+        user_id:
+          type: integer
+          description: 用户ID
+          example: 1
+        product_id:
+          type: integer
+          description: 商品ID
+          example: 1
+        sku_id:
+          type: integer
+          nullable: true
+          description: SKU ID
+          example: 2
+        quantity:
+          type: integer
+          description: 商品数量
+          example: 2
+        is_selected:
+          type: integer
+          description: 是否选中（1-选中，0-未选中）
+          enum: [ 0, 1 ]
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2024-01-01 12:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: "2024-01-01 12:00:00"
+        product:
+          $ref: '#/components/schemas/ProductResponse'
+        sku:
+          $ref: '#/components/schemas/SkuResponse'
+
+    ProductResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        spu_code:
+          type: string
+          example: "SPU001"
+        name:
+          type: string
+          example: "商品名称"
+        sale_price:
+          type: number
+          format: float
+          example: 99.00
+
+    SkuResponse:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 2
+        sku_code:
+          type: string
+          example: "SKU001"
+        sku_name:
+          type: string
+          example: "红色-M码"
+        sale_price:
+          type: number
+          format: float
+          example: 99.00
+
+    BaseResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: 操作成功
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: 错误信息
+        data:
+          type: object
+          example: { }
+

@@ -1,0 +1,5 @@
+package redisApplication
+
+func geo() {
+
+}

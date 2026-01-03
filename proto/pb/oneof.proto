@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "./;pb";
+
+message Boy {
+
+  oneof Age {
+    int32 a = 1;
+    int32 b = 2;
+    int32 c = 3;
+  }
+
+}
+
+
+message Girl {
+  int32 age = 1;
+
+}
+
+service Choose {
+  rpc bestChoose (Boy) returns (Girl);
+}
