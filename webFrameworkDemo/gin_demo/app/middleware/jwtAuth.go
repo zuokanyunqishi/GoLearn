@@ -22,7 +22,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		// 2. 验证 Token
 		claims, err := jwt.ValidateToken(tokenString)
-		if err != nil {
+		if err != nil || claims.UserID <= 0 {
 			ResponseError(c, "无效Token")
 			c.Abort()
 			return
