@@ -35,7 +35,7 @@ func (u *User) Add(ctx context.Context) error {
 }
 
 func (u *User) GetUserById(ctx *gin.Context, id int) error {
-	tx := app.Db.WithContext(ctx).Where("id = ?", id).Select("id,username,phone,nickname,sex,avatar,email,last_login_time").Find(&u)
+	tx := app.Db.WithContext(ctx).Where("id = ?", id).Select("id,username,phone,nickname,sex,avatar,email,last_login_time,age").Find(&u)
 	return tx.Error
 }
 
