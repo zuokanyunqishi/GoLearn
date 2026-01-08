@@ -146,13 +146,14 @@ func (s *ProductService) GetProductList(ctx *gin.Context, req ProductListRequest
 	query := app.Db.WithContext(ctx).Model(&model.Product{})
 
 	// 筛选条件
-	if req.CategoryID != nil {
+	if req.CategoryID != nil || *req.CategoryID != 0 {
+		// 判断 分类id 是不是二类
 		query = query.Where("category_id = ?", *req.CategoryID)
 	}
-	if req.BrandID != nil {
+	if req.BrandID != nil || *req.BrandID != 0 {
 		query = query.Where("brand_id = ?", *req.BrandID)
 	}
-	if req.Status != nil {
+	if req.Status != nil || *req.Status != 0 {
 		query = query.Where("status = ?", *req.Status)
 	} else {
 		// 默认只查询上架商品
@@ -161,7 +162,7 @@ func (s *ProductService) GetProductList(ctx *gin.Context, req ProductListRequest
 	if req.IsHot != nil {
 		query = query.Where("is_hot = ?", *req.IsHot)
 	}
-	if req.IsNew != nil {
+	if req.IsNew != nil || *req.IsNew != 0 {
 		query = query.Where("is_new = ?", *req.IsNew)
 	}
 	if req.IsRecommend != nil {
