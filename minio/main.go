@@ -4,77 +4,126 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"mime"
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
-	minio "github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "用法:\n")
+	fmt.Fprintf(os.Stderr, "  上传: %s upload <本地图片路径>\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  删除: %s delete <对象名>\n", os.Args[0])
+	os.Exit(2)
+}
+
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("加载 .env 文件失败: %v", err)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("获取用户目录失败: %v", err)
 	}
+	envPath := filepath.Join(homeDir, ".config", "minio-upload", ".env")
+	if err := godotenv.Load(envPath); err != nil {
+		log.Fatalf("加载 %s 失败: %v", envPath, err)
+	}
+
+	if len(os.Args) < 3 {
+		usage()
+	}
+
+	action := os.Args[1]
+	target := os.Args[2]
 
 	endpoint := os.Getenv("MINIO_ENDPOINT")
 	accessKeyID := os.Getenv("MINIO_ACCESS_KEY")
 	secretAccessKey := os.Getenv("MINIO_SECRET_KEY")
 	useSSL, _ := strconv.ParseBool(os.Getenv("MINIO_USE_SSL"))
 	bucketName := os.Getenv("MINIO_BUCKET")
-	localFile := os.Getenv("MINIO_LOCAL_FILE")
-	objectName := filepath.Base(localFile)
+	expireHoursStr := os.Getenv("MINIO_PRESIGNED_EXPIRE_HOURS")
+	expireHours, _ := strconv.Atoi(expireHoursStr)
+	if expireHours <= 0 {
+		expireHours = 168 // 默认7天
+	}
 
-	// 1. 初始化 MinIO 客户端
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		log.Fatalf("创建客户端失败: %v", err)
+		die("创建客户端失败: %v", err)
 	}
 
-	// 2. 检查桶是否存在，不存在则自动创建（可选）
 	ctx := context.Background()
-	exists, err := minioClient.BucketExists(ctx, bucketName)
+
+	switch action {
+	case "upload":
+		doUpload(ctx, minioClient, bucketName, target, time.Duration(expireHours)*time.Hour)
+	case "delete":
+		doDelete(ctx, minioClient, bucketName, target)
+	default:
+		usage()
+	}
+}
+
+func doUpload(ctx context.Context, client *minio.Client, bucket, localFile string, expire time.Duration) {
+	objectName := filepath.Base(localFile)
+
+	// 确保桶存在
+	exists, err := client.BucketExists(ctx, bucket)
 	if err != nil {
-		log.Fatalf("检查桶是否存在时出错: %v", err)
+		die("检查桶失败: %v", err)
 	}
 	if !exists {
-		log.Printf("桶 %s 不存在，正在创建...", bucketName)
-		err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+		err = client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 		if err != nil {
-			log.Fatalf("创建桶失败: %v", err)
+			die("创建桶失败: %v", err)
 		}
-		log.Printf("桶 %s 创建成功", bucketName)
 	}
 
-	// 3. 打开本地图片文件
 	file, err := os.Open(localFile)
 	if err != nil {
-		log.Fatalf("打开文件失败: %v", err)
+		die("打开文件失败: %v", err)
 	}
 	defer file.Close()
 
-	// 获取文件信息（用于上传时传递文件大小）
 	fileInfo, err := file.Stat()
 	if err != nil {
-		log.Fatalf("获取文件信息失败: %v", err)
+		die("获取文件信息失败: %v", err)
 	}
-	fileSize := fileInfo.Size()
 
-	// 4. 执行上传
-	uploadInfo, err := minioClient.PutObject(ctx, bucketName, objectName, file, fileSize, minio.PutObjectOptions{
-		ContentType: "image/jpeg", // 如果上传其他类型请修改，也可以让MinIO自动检测
+	contentType := mime.TypeByExtension(filepath.Ext(localFile))
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	_, err = client.PutObject(ctx, bucket, objectName, file, fileInfo.Size(), minio.PutObjectOptions{
+		ContentType: contentType,
 	})
 	if err != nil {
-		log.Fatalf("上传失败: %v", err)
+		die("上传失败: %v", err)
 	}
 
-	fmt.Printf("✅ 上传成功！\n")
-	fmt.Printf("   桶: %s\n", bucketName)
-	fmt.Printf("   对象名: %s\n", objectName)
-	fmt.Printf("   ETag: %s\n", uploadInfo.ETag)
-	fmt.Printf("   大小: %d bytes\n", uploadInfo.Size)
+	scheme := "http"
+	if os.Getenv("MINIO_USE_SSL") == "true" {
+		scheme = "https"
+	}
+	fmt.Printf("%s://%s/%s/%s", scheme, os.Getenv("MINIO_ENDPOINT"), bucket, objectName)
+}
+
+func doDelete(ctx context.Context, client *minio.Client, bucket, objectName string) {
+	err := client.RemoveObject(ctx, bucket, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		die("删除失败: %v", err)
+	}
+	fmt.Print("删除成功")
+}
+
+func die(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
 }
